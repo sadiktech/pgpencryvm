@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:encryption="http://www.mulesoft.org/schema/mule/encryption" xmlns:vm="http://www.mulesoft.org/schema/mule/vm" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation"
+	xmlns:spring="http://www.springframework.org/schema/beans" 
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-current.xsd
+http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/vm http://www.mulesoft.org/schema/mule/vm/current/mule-vm.xsd
+http://www.mulesoft.org/schema/mule/encryption http://www.mulesoft.org/schema/mule/encryption/current/mule-encryption.xsd">
+    <http:listener-config name="HTTP_Listener_Configuration" host="0.0.0.0" port="8081" doc:name="HTTP Listener Configuration"/>
+    <encryption:config name="Encryption" doc:name="Encryption">
+        <encryption:pgp-encrypter-config publicKeyRingFileName="C:\Users\sadik.ali\Desktop\Certificate\public\8C344D1D935E51901660EECA54771BE646C8087D.gpg" secretKeyRingFileName="C:\Users\sadik.ali\Desktop\Certificate\private\secret-private.gpg" secretAliasId="-3785997322159464994" secretPassphrase="123456789" principal="Sadik &lt;sadik.ali@mahindracomviva.com&gt;"/>
+    </encryption:config>
+    <vm:connector name="VM" validateConnections="true" doc:name="VM"/>
+    <flow name="pgpencryvmFlow">
+        <http:listener config-ref="HTTP_Listener_Configuration" path="/pgpencryptionvm" allowedMethods="POST" doc:name="HTTP"/>
+        <string-to-byte-array-transformer doc:name="String to Byte Array"/>
+        <encryption:encrypt config-ref="Encryption" using="PGP_ENCRYPTER" doc:name="Encryption">
+            <encryption:pgp-encrypter principal="Sadik Ali &lt;sadik.ali@mahindracomviva.com&gt;"/>
+        </encryption:encrypt>
+        <vm:outbound-endpoint exchange-pattern="one-way" path="pgpencryvm" connector-ref="VM" doc:name="VM"/>
+        <set-payload value="This is the payload sent to VM  #[payload]" doc:name="Set Payload"/>
+    </flow>
+    <flow name="pgpencryvmFlow1">
+        <vm:inbound-endpoint exchange-pattern="one-way" path="pgpencryvm" connector-ref="VM" doc:name="VM"/>
+        <encryption:decrypt config-ref="Encryption" using="PGP_ENCRYPTER" doc:name="Encryption"/>
+        <object-to-string-transformer doc:name="Object to String"/>
+        <logger message="This is Final payload : #[payload]" level="INFO" doc:name="Logger"/>
+    </flow>
+</mule>
